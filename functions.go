@@ -10,6 +10,16 @@ func ReadLimit(clientId string) (int64, bool) {
 	return limit, ok
 }
 
+func ReadLimits() map[string]int64 {
+	limitMutex.RLock()
+	defer limitMutex.RUnlock()
+	results := make(map[string]int64)
+	for key, value := range ClientLimits {
+		results[key] = value
+	}
+	return results
+}
+
 func WriteLimit(clientId string, limit int64) {
 	limitMutex.Lock()
 	defer limitMutex.Unlock()
