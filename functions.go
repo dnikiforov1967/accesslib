@@ -1,7 +1,6 @@
 package accesslib
 
 import "time"
-import "fmt"
 
 func ReadLimit(clientId string) (int64, bool) {
 	limitMutex.RLock()
@@ -38,7 +37,6 @@ func AccessRateControl(clientId string) bool {
             defer rateMutex.Unlock()
             val, ok := rateLimitMap[clientId]	
             if !ok {
-		fmt.Printf("We initiate rate limit for %s\n",clientId);
 		val = &accessTrackingStruct{1, time.Now()}
 		rateLimitMap[clientId] = val
             } else {
@@ -55,7 +53,6 @@ func AccessRateControl(clientId string) bool {
 			returnValue = !(limit < val.incomedRequests)
 		}
             }
-            fmt.Printf("Now time is %s, request %d\n", val.firstIncomeTime, val.incomedRequests);
         }
 	return returnValue;
 }
