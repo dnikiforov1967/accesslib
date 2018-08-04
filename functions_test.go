@@ -41,3 +41,11 @@ func TestSlowRate(t *testing.T) {
 	res = AccessRateControl("A")
 	assertEqual(t, res, true)
 }
+
+func TestRLocks(t *testing.T) {
+    ClientLimits["A"]=3
+    limitMutex.RLock()
+    res, _ := ReadLimit("A")
+    assertEqual(t, res, int64(3))
+    limitMutex.RUnlock()
+} 
