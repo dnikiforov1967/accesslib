@@ -82,7 +82,8 @@ func TestAccessLimit(t *testing.T) {
     }
     timer := time.NewTimer(2 * time.Second)
     <-timer.C
-    x := rateLimitMap["A"].incomedRequests
+    str, _ := rateTracking.readRateMap("A")
+    x, _ := str.readTrackingInfo()
     var exp int64 = 11
     assert.Equal(t, exp, x, "Incorrect concurrency control")
     

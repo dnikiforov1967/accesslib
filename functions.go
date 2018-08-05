@@ -28,19 +28,6 @@ func WriteLimit(clientId string, limit int64) {
 	ClientLimits[clientId] = limit
 }
 
-func readLimitMap(clientId string) (*accessTrackingStruct, bool){
-    rateMapMutex.RLock();
-    defer rateMapMutex.RUnlock()
-    val, ok := rateLimitMap[clientId]
-    return val, ok    
-}
-
-func writeLimitMap(clientId string, val *accessTrackingStruct) {
-    rateMapMutex.Lock();
-    defer rateMapMutex.Unlock()
-    rateLimitMap[clientId] = val   
-}
-
 //Access rate controller should be defended by mutex (at least if we want to
 //implement lazy initialization
 func AccessRateControl(clientId string) bool {
@@ -49,10 +36,10 @@ func AccessRateControl(clientId string) bool {
         if !ok {
             returnValue = false
         } else {
-            val, ok := readLimitMap(clientId)
+            val, ok := rateTracking.readRateMap(clientId)
             if !ok {
 		val = &accessTrackingStruct{1, time.Now(), sync.RWMutex{}}
-		writeLimitMap(clientId, val)
+		rateTracking.writeRateMap(clientId, val)
             } else {
 		currTime := time.Now()
                 requests, timestamp := val.readTrackingInfo()
