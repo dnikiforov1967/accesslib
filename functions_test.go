@@ -3,6 +3,7 @@ package accesslib
 import (
 	"time"
 	"testing"
+        "github.com/stretchr/testify/assert"
 )
 
 func assertEqual(t *testing.T, a interface{}, b interface{}) {
@@ -73,3 +74,16 @@ func TestRLocks(t *testing.T) {
     res = <-ch
     assertEqual(t, res, int64(5))
 } 
+
+func TestAccessLimit(t *testing.T) {
+    ClientLimits["A"]=10
+    for i :=0; i <=25; i++ {
+	go AccessRateControl("A")
+    }
+    timer := time.NewTimer(2 * time.Second)
+    <-timer.C
+    x := rateLimitMap["A"].incomedRequests
+    var exp int64 = 11
+    assert.Equal(t, exp, x, "Incorrect concurrency control")
+    
+}

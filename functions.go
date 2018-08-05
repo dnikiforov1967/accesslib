@@ -1,6 +1,9 @@
 package accesslib
 
-import "time"
+import (
+    "time"
+    "sync"
+)
 
 func ReadLimit(clientId string) (int64, bool) {
 	limitMutex.RLock()
@@ -25,6 +28,19 @@ func WriteLimit(clientId string, limit int64) {
 	ClientLimits[clientId] = limit
 }
 
+func readLimitMap(clientId string) (*accessTrackingStruct, bool){
+    rateMapMutex.RLock();
+    defer rateMapMutex.RUnlock()
+    val, ok := rateLimitMap[clientId]
+    return val, ok    
+}
+
+func writeLimitMap(clientId string, val *accessTrackingStruct) {
+    rateMapMutex.Lock();
+    defer rateMapMutex.Unlock()
+    rateLimitMap[clientId] = val   
+}
+
 //Access rate controller should be defended by mutex (at least if we want to
 //implement lazy initialization
 func AccessRateControl(clientId string) bool {
@@ -33,24 +49,22 @@ func AccessRateControl(clientId string) bool {
         if !ok {
             returnValue = false
         } else {
-            rateMutex.Lock();
-            defer rateMutex.Unlock()
-            val, ok := rateLimitMap[clientId]	
+            val, ok := readLimitMap(clientId)
             if !ok {
-		val = &accessTrackingStruct{1, time.Now()}
-		rateLimitMap[clientId] = val
+		val = &accessTrackingStruct{1, time.Now(), sync.RWMutex{}}
+		writeLimitMap(clientId, val)
             } else {
 		currTime := time.Now()
-		dur := currTime.Sub(val.firstIncomeTime)
+                requests, timestamp := val.readTrackingInfo()
+		dur := currTime.Sub(timestamp)
 		if (dur.Nanoseconds()/1000000 > 1000) {
-			val.firstIncomeTime = currTime
-			val.incomedRequests = 1
+			val.writeTrackingInfo(1,currTime)
 		} else {
-                        if limit >= val.incomedRequests {
-                            val.incomedRequests++
-                        }
-			//Here should be limit check
-			returnValue = !(limit < val.incomedRequests)
+                    if limit >= requests {
+                        requests = val.incrementIncomeRequests()
+                    }
+                    //Here should be limit check
+                    returnValue = !(limit < requests)
 		}
             }
         }
