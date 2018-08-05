@@ -18,7 +18,7 @@ func sleep(ms time.Duration) {
 }
 
 func TestSlowRate(t *testing.T) {
-	ClientLimits["A"]=3
+	ClientLimits.WriteLimit("A",3)
 	res := AccessRateControl("A")
 	assertEqual(t, res, true)
 
@@ -43,40 +43,8 @@ func TestSlowRate(t *testing.T) {
 	assertEqual(t, res, true)
 }
 
-func readOutside(clientId string, c chan int64) {
-    res, _ := ReadLimit(clientId)
-    c <- res
-}
-
-func TestRLocks(t *testing.T) {
-    ClientLimits["A"]=3
-    limitMutex.RLock()
-
-    res, _ := ReadLimit("A")
-    assertEqual(t, res, int64(3))
-
-    go WriteLimit("A",5)
-    timer := time.NewTimer(5*time.Second)
-    <-timer.C
-    //No repeated call from same thread !
-    res = ClientLimits["A"]
-    assertEqual(t, res, int64(3))
-    ch := make(chan int64)
-    go readOutside("A",ch)
-
-    limitMutex.RUnlock()
-
-    limitMutex.RLock()
-    res, _ = ReadLimit("A")
-    assertEqual(t, res, int64(5))
-    limitMutex.RUnlock()
-    
-    res = <-ch
-    assertEqual(t, res, int64(5))
-} 
-
 func TestAccessLimit(t *testing.T) {
-    ClientLimits["A"]=10
+    ClientLimits.WriteLimit("A",10)
     for i :=0; i <=25; i++ {
 	go AccessRateControl("A")
     }
