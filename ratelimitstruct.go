@@ -1,6 +1,9 @@
 package accesslib
 
-import "sync"
+import (
+    "sync"
+    "time"
+)
 
 type rateTrackingStruct struct {
     rateTrackingMap map[string]*accessTrackingStruct
@@ -14,8 +17,14 @@ func (obj *rateTrackingStruct) readRateMap(clientId string) (*accessTrackingStru
     return val, ok    
 }
 
-func (obj *rateTrackingStruct) writeRateMap(clientId string, val *accessTrackingStruct) {
+func (obj *rateTrackingStruct) initRateMap(clientId string) *accessTrackingStruct {
     obj.rateMapMutex.Lock();
     defer obj.rateMapMutex.Unlock()
-    obj.rateTrackingMap[clientId] = val   
+    res, ok := obj.rateTrackingMap[clientId]
+    if !ok {
+        res = &accessTrackingStruct{1, time.Now(), sync.RWMutex{}}
+        obj.rateTrackingMap[clientId] = res
+    }
+    return res
+       
 }

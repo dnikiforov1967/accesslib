@@ -2,7 +2,6 @@ package accesslib
 
 import (
     "time"
-    "sync"
 )
 
 //Access rate controller should be defended by mutex (at least if we want to
@@ -15,8 +14,7 @@ func AccessRateControl(clientId string) bool {
         } else {
             val, ok := rateTracking.readRateMap(clientId)
             if !ok {
-		val = &accessTrackingStruct{1, time.Now(), sync.RWMutex{}}
-		rateTracking.writeRateMap(clientId, val)
+		val = rateTracking.initRateMap(clientId)
             } else {
 		currTime := time.Now()
                 requests, timestamp := val.readTrackingInfo()
